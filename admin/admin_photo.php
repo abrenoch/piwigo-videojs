@@ -41,6 +41,7 @@ $admin_photo_base_url = get_root_url().'admin.php?page=photo-'.$_GET['image_id']
 $self_url = get_root_url().'admin.php?page=plugin&amp;section=piwigo-videojs/admin/admin_photo.php&amp;image_id='.$_GET['image_id'];
 $sync_url = get_root_url().'admin.php?page=plugin&amp;section=piwigo-videojs/admin/admin_photo.php&amp;sync_metadata=1&amp;image_id='.$_GET['image_id'];
 $delete_url = get_root_url().'admin.php?page=plugin&amp;section=piwigo-videojs/admin/admin_photo.php&amp;delete_extra=1&amp;image_id='.$_GET['image_id'].'&amp;pwg_token='.get_pwg_token();
+$poster_url = get_root_url().'admin.php?page=plugin&amp;section=piwigo-videojs/admin/admin_photo.php&amp;sync_metadata=1&amp;poster=1&amp;image_id='.$_GET['image_id'];
 
 load_language('plugin.lang', PHPWG_PLUGINS_PATH.basename(dirname(__FILE__)).'/');
 load_language('plugin.lang', VIDEOJS_PATH);
@@ -88,6 +89,14 @@ if (!isset($picture['path'])) {
 	die("Error reading file id: '". $_GET['image_id']."'");
 }
 
+// Generate poster
+if (isset($_GET['poster']) and $_GET['poster'] == 1)
+{
+	$sync_options['poster'] = true;
+	array_push( $page['infos'], 'Poster generated');
+}
+
+
 // Delete the extra data
 if (isset($_GET['delete_extra']) and $_GET['delete_extra'] == 1)
 {
@@ -103,6 +112,12 @@ if (isset($_GET['sync_metadata']) and $_GET['sync_metadata'] == 1)
 	$page['errors'] = $errors;
 	$page['warnings'] = $warnings;
 	$page['infos'] = $infos;
+
+	// if poster refresh was set, re-fetch the image data
+	// if (isset($_GET['poster']) and $_GET['poster'] == 1)
+	// {
+	// 	$picture = pwg_db_fetch_assoc(pwg_query($query));
+	// }
 }
 
 // Fetch metadata from db
@@ -196,12 +211,20 @@ $infos = array_merge(
 			);
 //print_r($infos);
 
+$thumb = DerivativeImage::thumb_url($picture);
+if (strpos($thumb, '?') !== false) {
+	$thumb .= '&'.time();
+} else {
+	$thumb .= '?'.time();
+}
+
 $template->assign(array(
 	'PWG_TOKEN' => get_pwg_token(),
 	'F_ACTION' => $self_url,
 	'SYNC_URL' => $sync_url,
 	'DELETE_URL' => $delete_url,
-	'TN_SRC' => DerivativeImage::thumb_url($picture).'?'.time(),
+	'POSTER_URL' => $poster_url,
+	'TN_SRC' => $thumb,
 	'TITLE' => render_element_name($picture),
 	'EXIF' => $exif,
 	'INFOS' => $infos,
